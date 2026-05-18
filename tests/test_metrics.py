@@ -1,13 +1,13 @@
 """Integration tests: simulate → analyse metrics."""
 
 import pytest
-import numpy as np
+
+from pid_tuner.analysis.metrics import compute_metrics
 from pid_tuner.controller.pid import PIDGains
 from pid_tuner.simulation.plant_models import FirstOrderPlus
 from pid_tuner.simulation.simulator import run_simulation
-from pid_tuner.analysis.metrics import compute_metrics
-from pid_tuner.tuning.imc import imc_tune
 from pid_tuner.tuning.base import ProcessParams
+from pid_tuner.tuning.imc import imc_tune
 
 
 @pytest.fixture

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
 
 import numpy as np
 from pydantic import BaseModel, Field, model_validator

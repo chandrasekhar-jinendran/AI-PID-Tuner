@@ -1,7 +1,8 @@
 """Tests for the core PID controller."""
 
 import pytest
-from pid_tuner.controller.pid import PIDController, PIDGains, ControllerMode
+
+from pid_tuner.controller.pid import ControllerMode, PIDController, PIDGains
 
 
 def make_controller(kp=1.0, ki=0.1, kd=0.0, dt=0.01) -> PIDController:

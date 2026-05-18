@@ -1,3 +1,3 @@
-from .pid import PIDController, PIDGains, ControllerMode
+from .pid import ControllerMode, PIDController, PIDGains
 
 __all__ = ["PIDController", "PIDGains", "ControllerMode"]

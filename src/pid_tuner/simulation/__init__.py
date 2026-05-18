@@ -1,4 +1,4 @@
-from .plant_models import PlantModel, FirstOrderPlus, SecondOrder, IntegratingPlant, get_plant
+from .plant_models import FirstOrderPlus, IntegratingPlant, PlantModel, SecondOrder, get_plant
 from .simulator import SimulationResult, run_simulation
 
 __all__ = [

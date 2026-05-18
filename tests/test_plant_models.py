@@ -1,9 +1,13 @@
 """Tests for plant simulation models."""
 
 import pytest
-import numpy as np
+
 from pid_tuner.simulation.plant_models import (
-    FirstOrderPlus, SecondOrder, IntegratingPlant, get_plant, AVAILABLE_PLANTS
+    AVAILABLE_PLANTS,
+    FirstOrderPlus,
+    IntegratingPlant,
+    SecondOrder,
+    get_plant,
 )
 
 

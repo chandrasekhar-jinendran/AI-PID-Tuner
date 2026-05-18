@@ -1,11 +1,11 @@
 """Tests for tuning algorithms."""
 
 import pytest
+
 from pid_tuner.tuning.base import ProcessParams
-from pid_tuner.tuning.ziegler_nichols import ziegler_nichols_open_loop, ziegler_nichols_closed_loop
 from pid_tuner.tuning.cohen_coon import cohen_coon
 from pid_tuner.tuning.imc import imc_tune
-
+from pid_tuner.tuning.ziegler_nichols import ziegler_nichols_closed_loop, ziegler_nichols_open_loop
 
 PARAMS = ProcessParams(K=2.0, tau=5.0, L=1.0)
 
@@ -33,12 +33,12 @@ class TestZieglerNicholsOpenLoop:
 
 class TestZieglerNicholsClosedLoop:
     def test_pid_gains_positive(self):
-        r = ziegler_nichols_closed_loop(Ku=10.0, Pu=2.0)
+        r = ziegler_nichols_closed_loop(ku=10.0, pu=2.0)
         assert r.kp > 0 and r.ki > 0 and r.kd > 0
 
     def test_bad_ku_raises(self):
         with pytest.raises(ValueError):
-            ziegler_nichols_closed_loop(Ku=-1.0, Pu=2.0)
+            ziegler_nichols_closed_loop(ku=-1.0, pu=2.0)
 
 
 class TestCohenCoon:

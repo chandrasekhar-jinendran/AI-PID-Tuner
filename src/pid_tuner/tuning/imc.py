@@ -33,27 +33,27 @@ def imc_tune(
     This maps to standard PID gains via:
         Kp = (2*tau + L) / (2*K*(lambda_ + L))  [approximation for small L]
     """
-    K, tau, L = params.K, params.tau, params.L
+    k, tau, dead_time = params.K, params.tau, params.L
 
-    if L == 0:
-        L = 1e-6
+    if dead_time == 0:
+        dead_time = 1e-6
 
     # Auto-select lambda from robustness level
     if lambda_ is None:
         factors = {"aggressive": 0.2, "moderate": 0.5, "conservative": 1.0}
         factor = factors.get(robustness, 0.5)
-        lambda_ = max(factor * tau, 0.8 * L)
+        lambda_ = max(factor * tau, 0.8 * dead_time)
 
     if lambda_ <= 0:
         raise ValueError("lambda_ must be positive")
 
     # IMC → PID conversion (Skogestad's simplified IMC)
-    kp = (2 * tau + L) / (2 * K * (lambda_ + L / 2))
-    Ti = tau + L / 2
-    Td = tau * L / (2 * tau + L)
+    kp = (2 * tau + dead_time) / (2 * k * (lambda_ + dead_time / 2))
+    ti = tau + dead_time / 2
+    td = tau * dead_time / (2 * tau + dead_time)
 
-    ki = kp / Ti
-    kd = kp * Td
+    ki = kp / ti
+    kd = kp * td
 
     return TuningResult(
         method="IMC (Internal Model Control)",

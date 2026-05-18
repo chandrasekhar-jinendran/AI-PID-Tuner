@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from pid_tuner.controller.pid import PIDController, PIDGains
-from pid_tuner.simulation.plant_models import PlantModel, get_plant
+from pid_tuner.simulation.plant_models import PlantModel
 
 
 @dataclass

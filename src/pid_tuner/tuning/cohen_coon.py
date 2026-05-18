@@ -25,30 +25,30 @@ def cohen_coon(
     params:          FOPDT process identification results.
     controller_type: "P", "PI", or "PID".
     """
-    K, tau, L = params.K, params.tau, params.L
+    k, tau, dead_time = params.K, params.tau, params.L
 
-    if L == 0:
-        L = 1e-6
+    if dead_time == 0:
+        dead_time = 1e-6
 
-    r = L / tau  # dead-time ratio (dimensionless)
+    r = dead_time / tau  # dead-time ratio (dimensionless)
     ct = controller_type.upper()
 
     if ct == "P":
-        kp = (1 / K) * (1 / r + 1 / 3)
+        kp = (1 / k) * (1 / r + 1 / 3)
         ki, kd = 0.0, 0.0
         note = "P: Cohen-Coon."
     elif ct == "PI":
-        kp = (1 / K) * (0.9 / r + 1 / 12)
-        Ti = L * (30 + 3 * r) / (9 + 20 * r)
-        ki = kp / Ti
+        kp = (1 / k) * (0.9 / r + 1 / 12)
+        ti = dead_time * (30 + 3 * r) / (9 + 20 * r)
+        ki = kp / ti
         kd = 0.0
         note = "PI: Cohen-Coon. Good disturbance rejection."
     elif ct == "PID":
-        kp = (1 / K) * (4 / 3 / r + 1 / 4)
-        Ti = L * (32 + 6 * r) / (13 + 8 * r)
-        Td = L * 4 / (11 + 2 * r)
-        ki = kp / Ti
-        kd = kp * Td
+        kp = (1 / k) * (4 / 3 / r + 1 / 4)
+        ti = dead_time * (32 + 6 * r) / (13 + 8 * r)
+        td = dead_time * 4 / (11 + 2 * r)
+        ki = kp / ti
+        kd = kp * td
         note = "PID: Cohen-Coon. Balanced speed and overshoot."
     else:
         raise ValueError(f"controller_type must be P/PI/PID, got '{controller_type}'")

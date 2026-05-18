@@ -11,10 +11,9 @@ Computes the standard set used in control engineering:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
-from numpy.typing import NDArray
 
 from pid_tuner.simulation.simulator import SimulationResult
 
@@ -73,7 +72,6 @@ def compute_metrics(result: SimulationResult) -> ResponseMetrics:
     y = result.output
     u = result.control
     sp = result.setpoint[0]   # step amplitude (constant)
-    dt = float(t[1] - t[0])
 
     # --- Rise time (10% → 90%) ---
     y10 = 0.10 * sp

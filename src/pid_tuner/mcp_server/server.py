@@ -28,14 +28,14 @@ from typing import Any
 import numpy as np
 from mcp.server.fastmcp import FastMCP
 
+from pid_tuner.analysis.metrics import compute_metrics
 from pid_tuner.controller.pid import PIDGains
-from pid_tuner.simulation.plant_models import get_plant, AVAILABLE_PLANTS, FirstOrderPlus
+from pid_tuner.simulation.plant_models import get_plant
 from pid_tuner.simulation.simulator import SimulationResult, run_simulation
 from pid_tuner.tuning.base import ProcessParams
-from pid_tuner.tuning.ziegler_nichols import ziegler_nichols_open_loop, ziegler_nichols_closed_loop
 from pid_tuner.tuning.cohen_coon import cohen_coon
 from pid_tuner.tuning.imc import imc_tune
-from pid_tuner.analysis.metrics import compute_metrics
+from pid_tuner.tuning.ziegler_nichols import ziegler_nichols_closed_loop, ziegler_nichols_open_loop
 
 mcp = FastMCP(
     name="pid-tuner",
@@ -62,12 +62,20 @@ def list_plants() -> str:
     """
     catalogue = {
         "first_order_plus_dead_time": {
-            "description": "FOPDT: G(s) = K*exp(-L*s)/(tau*s+1). Most common industrial process model.",
-            "kwargs": {"K": "process gain (float, >0)", "tau": "time constant [s] (float, >0)", "L": "dead time [s] (float, >=0, default 0)"},
+            "description": "FOPDT: G(s) = K*exp(-L*s)/(tau*s+1). Most common industrial model.",
+            "kwargs": {
+                "K": "process gain (float, >0)",
+                "tau": "time constant [s] (float, >0)",
+                "L": "dead time [s] (float, >=0, default 0)",
+            },
         },
         "second_order": {
-            "description": "2nd-order: G(s) = K*wn²/(s²+2ζwn·s+wn²). Models oscillatory/mechanical systems.",
-            "kwargs": {"K": "DC gain (float)", "wn": "natural frequency [rad/s] (float, >0)", "zeta": "damping ratio (float, typical 0.3–2.0)"},
+            "description": "2nd-order: G(s)=K*wn²/(s²+2ζwn·s+wn²). Oscillatory/mechanical systems.",
+            "kwargs": {
+                "K": "DC gain (float)",
+                "wn": "natural frequency [rad/s] (float, >0)",
+                "zeta": "damping ratio (float, typical 0.3-2.0)",
+            },
         },
         "integrating": {
             "description": "Pure integrator: G(s) = K/s. Level tanks, velocity control.",
@@ -84,14 +92,14 @@ def list_plants() -> str:
 @mcp.tool()
 def tune_pid(
     method: str,
-    K: float,
+    k: float,
     tau: float,
-    L: float = 0.0,
+    dead_time: float = 0.0,
     controller_type: str = "PID",
     lambda_: float | None = None,
     robustness: str = "moderate",
-    Ku: float | None = None,
-    Pu: float | None = None,
+    ku: float | None = None,
+    pu: float | None = None,
 ) -> str:
     """
     Compute PID gains using a classical tuning algorithm.
@@ -103,28 +111,28 @@ def tune_pid(
                        "zn_closed_loop" — Ziegler-Nichols ultimate-gain
                        "cohen_coon"     — Cohen-Coon (better for large L/tau)
                        "imc"            — IMC / Skogestad (most robust)
-    K:               Process gain (ΔY/ΔU from open-loop step test).
+    k:               Process gain (ΔY/ΔU from open-loop step test).
     tau:             Dominant time constant [s].
-    L:               Dead time [s] (default 0).
+    dead_time:       Dead time [s] (default 0).
     controller_type: "P", "PI", or "PID" (default "PID").
     lambda_:         IMC only — closed-loop time constant [s]. Auto-set if None.
     robustness:      IMC only — "aggressive", "moderate", "conservative".
-    Ku:              ZN closed-loop only — ultimate gain.
-    Pu:              ZN closed-loop only — ultimate period [s].
+    ku:              ZN closed-loop only — ultimate gain.
+    pu:              ZN closed-loop only — ultimate period [s].
 
     Returns
     -------
     JSON with keys: method, kp, ki, kd, notes.
     """
-    params = ProcessParams(K=K, tau=tau, L=L)
+    params = ProcessParams(K=k, tau=tau, L=dead_time)
     m = method.lower().strip()
 
     if m == "zn_open_loop":
         result = ziegler_nichols_open_loop(params, controller_type)
     elif m == "zn_closed_loop":
-        if Ku is None or Pu is None:
-            return json.dumps({"error": "zn_closed_loop requires Ku and Pu arguments."})
-        result = ziegler_nichols_closed_loop(Ku, Pu, controller_type)
+        if ku is None or pu is None:
+            return json.dumps({"error": "zn_closed_loop requires ku and pu arguments."})
+        result = ziegler_nichols_closed_loop(ku, pu, controller_type)
     elif m == "cohen_coon":
         result = cohen_coon(params, controller_type)
     elif m == "imc":
@@ -148,9 +156,9 @@ def simulate_pid(
     ki: float,
     kd: float,
     plant_model: str,
-    plant_K: float = 1.0,
+    plant_k: float = 1.0,
     plant_tau: float = 1.0,
-    plant_L: float = 0.0,
+    plant_l: float = 0.0,
     plant_wn: float = 1.0,
     plant_zeta: float = 0.7,
     duration: float = 30.0,
@@ -169,7 +177,7 @@ def simulate_pid(
     ----------
     kp, ki, kd:            PID gains to simulate.
     plant_model:           Plant model name (use list_plants to see options).
-    plant_K, plant_tau, plant_L:  FOPDT/integrating plant params.
+    plant_k, plant_tau, plant_l:  FOPDT/integrating plant params.
     plant_wn, plant_zeta:  Second-order plant params.
     duration:              Simulation duration [s] (default 30).
     dt:                    Integration step [s] (default 0.01).
@@ -191,10 +199,11 @@ def simulate_pid(
         derivative_filter_coeff=derivative_filter_coeff,
     )
 
-    # Build plant kwargs based on model type
-    plant_kwargs: dict[str, Any] = {"K": plant_K}
+    # Build plant kwargs based on model type — keys match constructor arg names (K, L)
+    plant_kwargs: dict[str, Any] = {"K": plant_k}
     if plant_model == "first_order_plus_dead_time":
-        plant_kwargs.update({"tau": plant_tau, "L": plant_L})
+        plant_kwargs.update({"tau": plant_tau, "L": plant_l})
+
     elif plant_model == "second_order":
         plant_kwargs.update({"wn": plant_wn, "zeta": plant_zeta})
     # integrating only needs K
@@ -277,9 +286,9 @@ def analyze_response(
 
 @mcp.tool()
 def compare_tunings(
-    K: float,
+    k: float,
     tau: float,
-    L: float = 0.0,
+    dead_time: float = 0.0,
     plant_model: str = "first_order_plus_dead_time",
     duration: float = 30.0,
     setpoint: float = 1.0,
@@ -290,9 +299,9 @@ def compare_tunings(
 
     Parameters
     ----------
-    K:           Process gain.
+    k:           Process gain.
     tau:         Time constant [s].
-    L:           Dead time [s] (default 0).
+    dead_time:   Dead time [s] (default 0).
     plant_model: Plant model to simulate on.
     duration:    Simulation duration [s].
     setpoint:    Step target.
@@ -301,16 +310,16 @@ def compare_tunings(
     -------
     JSON list of {method, kp, ki, kd, metrics} for each algorithm.
     """
-    params = ProcessParams(K=K, tau=tau, L=L)
+    params = ProcessParams(K=k, tau=tau, L=dead_time)
     algorithms = [
         ziegler_nichols_open_loop(params, "PID"),
         cohen_coon(params, "PID"),
         imc_tune(params, robustness="moderate"),
     ]
 
-    plant_kwargs: dict[str, Any] = {"K": K}
+    plant_kwargs: dict[str, Any] = {"K": k}
     if plant_model == "first_order_plus_dead_time":
-        plant_kwargs.update({"tau": tau, "L": L})
+        plant_kwargs.update({"tau": tau, "L": dead_time})
 
     comparison = []
     for tuning in algorithms:
@@ -364,7 +373,7 @@ def identify_fopdt(
     if abs(final_val) < 1e-9:
         return json.dumps({"error": "Output did not change — no identifiable step response."})
 
-    K = final_val / step_magnitude
+    k = final_val / step_magnitude
 
     # 28.3% and 63.2% crossing times
     y283 = 0.283 * final_val
@@ -374,26 +383,30 @@ def identify_fopdt(
     idx632 = int(np.argmax(y >= y632)) if np.any(y >= y632) else -1
 
     if idx283 < 0 or idx632 < 0:
-        return json.dumps({"error": "Output did not reach 63.2% of final value — extend simulation."})
+        return json.dumps(
+            {"error": "Output did not reach 63.2% of final value — extend simulation."}
+        )
 
     t283 = float(t[idx283])
     t632 = float(t[idx632])
 
     tau = 1.5 * (t632 - t283)
-    L = t632 - tau
+    dead_time = max(0.0, t632 - tau)
 
-    L = max(0.0, L)   # clamp: dead time can't be negative
-
-    return json.dumps({
-        "K": round(K, 6),
-        "tau": round(tau, 6),
-        "L": round(L, 6),
-        "note": (
-            "Estimated via 28.3%/63.2% reaction-curve method. "
-            "Accuracy depends on data quality and step size. "
-            f"L/tau ratio = {L/tau:.3f} (ZN reliable for <0.5, CC better for 0.1–1.0)."
-        ),
-    }, indent=2)
+    return json.dumps(
+        {
+            "K": round(k, 6),
+            "tau": round(tau, 6),
+            "L": round(dead_time, 6),
+            "note": (
+                "Estimated via 28.3%/63.2% reaction-curve method. "
+                "Accuracy depends on data quality and step size. "
+                f"L/tau ratio = {dead_time/tau:.3f} "
+                "(ZN reliable for <0.5, CC better for 0.1-1.0)."
+            ),
+        },
+        indent=2,
+    )
 
 
 # ---------------------------------------------------------------------------

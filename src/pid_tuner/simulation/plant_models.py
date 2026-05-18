@@ -9,7 +9,6 @@ can use any step size without numerical instability.
 
 from __future__ import annotations
 
-import numpy as np
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -52,7 +51,7 @@ class FirstOrderPlus(PlantModel):
     L:   Dead time / transport delay [s]
     """
 
-    def __init__(self, K: float = 1.0, tau: float = 1.0, L: float = 0.0) -> None:
+    def __init__(self, K: float = 1.0, tau: float = 1.0, L: float = 0.0) -> None:  # noqa: N803
         if tau <= 0:
             raise ValueError("tau must be positive")
         if L < 0:
@@ -114,7 +113,7 @@ class SecondOrder(PlantModel):
     zeta: Damping ratio (0=undamped, 1=critically damped, >1=overdamped)
     """
 
-    def __init__(self, K: float = 1.0, wn: float = 1.0, zeta: float = 0.7) -> None:
+    def __init__(self, K: float = 1.0, wn: float = 1.0, zeta: float = 0.7) -> None:  # noqa: N803
         if wn <= 0:
             raise ValueError("wn must be positive")
         self.K = K
@@ -163,7 +162,7 @@ class IntegratingPlant(PlantModel):
     Common in level-control and velocity systems.
     """
 
-    def __init__(self, K: float = 1.0) -> None:
+    def __init__(self, K: float = 1.0) -> None:  # noqa: N803
         self.K = K
         self._y: float = 0.0
 
