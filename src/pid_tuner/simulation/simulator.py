@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -21,9 +22,9 @@ class SimulationResult:
     control: NDArray[np.float64]      # controller output u(t)
     error: NDArray[np.float64]        # e(t) = setpoint - output
     gains: dict[str, float]
-    plant_info: dict
+    plant_info: dict[str, Any]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "time": self.time.tolist(),
             "setpoint": self.setpoint.tolist(),

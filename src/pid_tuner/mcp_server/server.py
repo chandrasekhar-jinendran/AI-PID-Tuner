@@ -323,7 +323,10 @@ def compare_tunings(
 
     comparison = []
     for tuning in algorithms:
-        gains = PIDGains(kp=tuning.kp, ki=tuning.ki, kd=tuning.kd)
+        gains = PIDGains(
+                kp=tuning.kp, ki=tuning.ki, kd=tuning.kd,
+                output_min=-1e6, output_max=1e6, derivative_filter_coeff=10.0,
+            )
         try:
             plant = get_plant(plant_model, **plant_kwargs)
             sim = run_simulation(gains=gains, plant=plant, duration=duration, setpoint=setpoint)
