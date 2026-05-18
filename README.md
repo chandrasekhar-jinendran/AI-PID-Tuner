@@ -1,4 +1,4 @@
-# PID Tuner — AI-Assisted PID Controller Tuning via MCP
+# AI-PID Tuner — AI-Assisted PID Controller Tuning via MCP
 
 [![CI](https://github.com/YOUR_USERNAME/pid-tuner/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/pid-tuner/actions)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
